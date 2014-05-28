@@ -426,8 +426,8 @@ func TestNewClient(t *testing.T) {
 		t.Error("Couldn't make a valid client...\n", err)
 	}
 	// simple validation on the created client
-	if c.Auth.clientName != "testclient" {
-		t.Error("unexpected client name: ", c.Auth.clientName)
+	if c.clientName != "testclient" {
+		t.Error("unexpected client name: ", c.clientName)
 	}
 
 	// Bad PEM should be an error
@@ -443,17 +443,22 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
-func TestMakeRequest(t *testing.T) {
+func TestClient(t *testing.T) {
 	server := createServer()
 	c, _ := NewClient("testclient", privateKey)
 	defer server.Close()
 
-	resp, err := c.MakeRequest("GET", server.URL, nil)
+	req, err := c.NewRequest("GET", server.URL, nil)
 	if err != nil {
-		t.Error("HRRRM! we tried to make a request but it failed :`( ", err)
+		t.Error("could not create request to:", server.URL)
+	}
+
+	resp, err := c.Do(req)
+	if err != nil {
+		t.Error("do req failed:", err)
 	}
 	if resp.StatusCode != 200 {
-		t.Error("Non 200 return code: ", resp.Status)
+		t.Error("non 200 return code: ", resp.Status)
 	}
 
 	// This should fail because we've got an invalid URI

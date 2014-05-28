@@ -26,13 +26,12 @@ type AuthConfig struct {
 
 // Client is vessel for public methods used against the chef-server
 type Client struct {
-	Auth   *AuthConfig
-	client *http.Client
+	*AuthConfig
+	*http.Client
 }
 
 // NewClient is the client generator used to instantiate a client for talking to a chef-server
-// It is a simple constructor for the Client struct intended as a easy interface for issuing
-// signed requests
+// It is a custom constructor wrapper aound the http Client struct intended as a easy interface for issuing signed requests
 func NewClient(name string, key string) (*Client, error) {
 	pk, err := privateKeyFromString([]byte(key))
 	if err != nil {
@@ -40,15 +39,31 @@ func NewClient(name string, key string) (*Client, error) {
 	}
 
 	c := &Client{
-		Auth: &AuthConfig{
+		&AuthConfig{
 			privateKey: pk,
 			clientName: name,
 			cryptoHash: crypto.SHA1,
 		},
-		client: &http.Client{},
+		&http.Client{},
 	}
 	return c, nil
 }
+
+// NewRequest is used internally by Get,Put,Head,Post,Do
+func (c *Client) NewRequest(method string, urlStr string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, urlStr, body)
+	if err != nil {
+		return nil, err
+	}
+	// BUG(fujin): Make a non-mutating version of this that returns a new request.
+	c.SignRequest(req, c.cryptoHash)
+	return req, nil
+}
+
+// Client Get shadows http.Get, with requset signing
+// func (c *Client) Get(url string) (*http.Response, error) {
+// 	return nil, nil
+// }
 
 // MakeRequest performs a signed request for the chef client
 func (c *Client) MakeRequest(method string, url string, body io.Reader) (*http.Response, error) {
@@ -57,9 +72,9 @@ func (c *Client) MakeRequest(method string, url string, body io.Reader) (*http.R
 		return nil, err
 	}
 	// don't have to check this works, signRequest only emits error when signing hash is not valid, and we baked that in
-	c.Auth.SignRequest(req, c.Auth.cryptoHash)
+	c.SignRequest(req, c.cryptoHash)
 
-	res, err := c.client.Do(req)
+	res, err := c.Do(req)
 	if err != nil {
 		return nil, err
 	}
