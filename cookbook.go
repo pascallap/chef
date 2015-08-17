@@ -344,7 +344,6 @@ func (c *CookbookService) Upload(name, version, source string, cookbookDestripti
     fmt.Println(box)
 		os.Exit(1)
 	}
-  fmt.Println("Sandbox has been commited: ")
   
   c.Put(name,version,cookbookDestriptionJson)
   
@@ -391,9 +390,7 @@ func ComputeMd5(filePath string) (string, error) {
 //   Chef API docs: http://docs.opscode.com/api_chef_server.html#id2
 func (c *CookbookService) Put(name, version string, cookbook CookbookPut) (err error) {
   url := fmt.Sprintf("cookbooks/%s/%s", name, version)
-  
-  fmt.Println("************ Upload "+name)
-  
+
   body, err :=  JSONReader(cookbook)
 	if err != nil {
     fmt.Println("Json Reading err" + err.Error())
