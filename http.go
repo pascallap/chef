@@ -166,7 +166,7 @@ func (c *Client) magicRequestDecoder(method, path string, body io.Reader, v inte
 	res, err := c.Do(req, v)
 	debug("Response: %+v \n", res)
 	if err != nil {
-    fmt.Println("Error on response"+err.Error())
+    fmt.Println("Error on response: "+err.Error())
 		return err
 	}
 	return err

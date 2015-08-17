@@ -5,6 +5,8 @@ import "os"
 import "path/filepath"
 import "crypto/md5"
 import "encoding/json"
+import "encoding/base64"
+import "encoding/hex"
 import "io"
 
 const filechunk = 8192    // we settle for 8KB
@@ -313,24 +315,36 @@ func (c *CookbookService) Upload(name, version, source string, cookbookDestripti
     if item.Upload {
       iofile,err := os.Open(fileChecksums[respChecksumID])
       defer iofile.Close()
+
+      hexChecksum,_:= hex.DecodeString(respChecksumID)
+      checksum64 := base64.StdEncoding.EncodeToString(hexChecksum)
+
       req, err := c.client.NewRequest("PUT", item.Url, iofile)
-      _, err = c.client.Do(req, nil)
-      iofile.Close()
       if err !=nil {
         fmt.Println(err)
         return err
       }
-      if err != nil{
-        fmt.Println(err)
+
+      req.Header.Set("content-type", "application/x-binary")
+      req.Header.Set("content-md5", checksum64)
+      req.Header.Set("accept", "application/json")
+
+      _, err = c.client.Do(req, nil)
+      iofile.Close()
+      if err !=nil {
+        fmt.Println("Error on push cookbookitems: " + err.Error())
         return err
       }
     }    
   }
-	_, err = c.client.Sandboxes.Put(postResp.ID)
+
+	box , err := c.client.Sandboxes.Put(postResp.ID)
 	if err != nil {
 		fmt.Println("Error commiting sandbox: ", err.Error())
+    fmt.Println(box)
 		os.Exit(1)
 	}
+  fmt.Println("Sandbox has been commited: ")
   
   c.Put(name,version,cookbookDestriptionJson)
   
