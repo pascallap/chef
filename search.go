@@ -104,10 +104,13 @@ func (e SearchService) Exec(idx, statement string) (res SearchResult, err error)
 	inc := 1000
 	total := res.Total
 
-	for start + inc <= total {
+	for start+inc <= total {
 		query.Start = query.Start + 1000
 		start = query.Start
-		ares, _ := query.Do(e.client)
+		ares, err := query.Do(e.client)
+		if err != nil {
+			return res, err
+		}
 		res.Rows = append(res.Rows, ares.Rows...)
 	}
 	return
